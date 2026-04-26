@@ -1,6 +1,5 @@
--- KDM UI Library
--- Основной файл: kdm_ui.lua
--- Исправленная версия (шрифты числами)
+-- KDM UI Library (финальная версия)
+-- Исправлено: шрифты через числа (0, 2), проверки elem.Drawings
 
 local KDM = {}
 KDM.__index = KDM
@@ -18,13 +17,12 @@ if not Drawing then
     return
 end
 
--- Шрифты в числовом представлении
+-- Шрифты в числовом формате
 local FONT_NORMAL = 0
 local FONT_BOLD = 2
 
 -- Внутренние переменные
 local ActiveWindows = {}
-local Connections = {}
 
 -- Цветовая палитра по умолчанию
 local Colors = {
@@ -97,13 +95,12 @@ end
 function Tab:Activate()
     self.Visible = true
     for _, elem in ipairs(self.Elements) do
-        if elem.Visible then
+        if elem.Visible and elem.Drawings then  -- проверка на Drawings
             for _, d in ipairs(elem.Drawings) do
                 d.Visible = true
             end
         end
     end
-    --
     if self.Button then
         self.Button.Color = Colors.TabActive
     end
@@ -112,8 +109,10 @@ end
 function Tab:Deactivate()
     self.Visible = false
     for _, elem in ipairs(self.Elements) do
-        for _, d in ipairs(elem.Drawings) do
-            d.Visible = false
+        if elem.Drawings then  -- проверка на Drawings
+            for _, d in ipairs(elem.Drawings) do
+                d.Visible = false
+            end
         end
     end
     if self.Button then
@@ -139,7 +138,6 @@ function Window.new(options)
     self.MainContainer = {}
     self.Elements = {}
 
-    -- Создание базового фрейма
     -- Тень окна
     local shadow = Drawing.new("Square")
     shadow.Size = Vector2.new(self.Width + 8, self.Height + 8)
@@ -172,7 +170,7 @@ function Window.new(options)
     titleText.Position = self.Position + Vector2.new(8, 5)
     titleText.Size = 18
     titleText.Color = Colors.Text
-    titleText.Font = FONT_BOLD  -- ИСПРАВЛЕНО
+    titleText.Font = FONT_BOLD  -- жирный шрифт
     titleText.Visible = true
     table.insert(self.MainContainer, titleText)
 
@@ -208,13 +206,11 @@ function Window.new(options)
         if self.Dragging then
             local mousePos = UIS:GetMouseLocation()
             local newPos = Vector2.new(mousePos.X - self.DragStart.X, mousePos.Y - self.DragStart.Y)
-            -- Обновление позиций всех drawings
             local delta = newPos - self.Position
             self.Position = newPos
             for _, d in ipairs(self.MainContainer) do
                 d.Position = d.Position + delta
             end
-            -- Табы и элементы обновят позиции через методы табов
             for _, tab in ipairs(self.Tabs) do
                 if tab.Button then
                     tab.Button.Position = tab.Button.Position + delta
@@ -223,8 +219,10 @@ function Window.new(options)
                     tab.ButtonText.Position = tab.ButtonText.Position + delta
                 end
                 for _, elem in ipairs(tab.Elements) do
-                    for _, d in ipairs(elem.Drawings) do
-                        d.Position = d.Position + delta
+                    if elem.Drawings then  -- проверка, чтобы избежать ошибки с TabConnection
+                        for _, d in ipairs(elem.Drawings) do
+                            d.Position = d.Position + delta
+                        end
                     end
                 end
             end
@@ -250,7 +248,7 @@ function Window.new(options)
     closeText.Position = closeBtn.Position + Vector2.new(4, 0)
     closeText.Size = 16
     closeText.Color = Colors.Text
-    closeText.Font = FONT_BOLD  -- ИСПРАВЛЕНО
+    closeText.Font = FONT_BOLD
     closeText.Visible = true
     table.insert(self.MainContainer, closeText)
 
@@ -265,14 +263,12 @@ function Window.new(options)
     end)
     table.insert(self.Elements, { Type = "CloseConnection", Conn = closeConn })
 
-    -- Регистрация окна
     table.insert(ActiveWindows, self)
     return self
 end
 
 function Window:AddTab(name, icon)
     local tab = Tab.new(self, name, icon)
-    local tabWidth = #self.Tabs * 100 + 10
     local tabX = self.Position.X + 10 + (#self.Tabs * 100)
     local tabY = self.Position.Y + 35
     local tabBtn = Drawing.new("Square")
@@ -288,7 +284,7 @@ function Window:AddTab(name, icon)
     tabText.Position = tabBtn.Position + Vector2.new(5, 3)
     tabText.Size = 15
     tabText.Color = Colors.Text
-    tabText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
+    tabText.Font = FONT_NORMAL
     tabText.Visible = true
     table.insert(self.MainContainer, tabText)
 
@@ -330,8 +326,10 @@ function Window:Destroy()
     end
     for _, tab in ipairs(self.Tabs) do
         for _, elem in ipairs(tab.Elements) do
-            for _, d in ipairs(elem.Drawings) do
-                if d.Remove then d:Remove() end
+            if elem.Drawings then
+                for _, d in ipairs(elem.Drawings) do
+                    if d.Remove then d:Remove() end
+                end
             end
             if elem.Connections then
                 for _, c in ipairs(elem.Connections) do
@@ -342,8 +340,7 @@ function Window:Destroy()
     end
 end
 
--- Методы для элементов внутри вкладки
--- Кнопка
+-- Методы элементов внутри вкладки
 function Tab:AddButton(text, callback)
     local element = UIElement.new("Button")
     element.Callback = callback
@@ -364,11 +361,10 @@ function Tab:AddButton(text, callback)
     btnText.Position = btn.Position + Vector2.new(5, 5)
     btnText.Size = 16
     btnText.Color = Colors.Text
-    btnText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
+    btnText.Font = FONT_NORMAL
     btnText.Visible = false
     table.insert(element.Drawings, btnText)
 
-    -- Наведение и клик
     local hover = false
     local inputConn = UIS.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 and element.Visible and element.Active then
@@ -400,7 +396,6 @@ function Tab:AddButton(text, callback)
     return element
 end
 
--- Тоггл
 function Tab:AddToggle(text, default, callback)
     local element = UIElement.new("Toggle")
     element.Value = default or false
@@ -409,7 +404,6 @@ function Tab:AddToggle(text, default, callback)
     local xPos = self.Window.Position.X + 10
     local yPos = self.Window.Position.Y + 65 + yOffset
 
-    -- Фон переключателя
     local toggleBg = Drawing.new("Square")
     toggleBg.Size = Vector2.new(20, 10)
     toggleBg.Position = Vector2.new(xPos + 80, yPos + 5)
@@ -418,7 +412,6 @@ function Tab:AddToggle(text, default, callback)
     toggleBg.Visible = false
     table.insert(element.Drawings, toggleBg)
 
-    -- Кружок
     local toggleCircle = Drawing.new("Square")
     toggleCircle.Size = Vector2.new(14, 14)
     toggleCircle.Position = element.Value and (toggleBg.Position + Vector2.new(6, -2)) or (toggleBg.Position - Vector2.new(0, 2))
@@ -427,13 +420,12 @@ function Tab:AddToggle(text, default, callback)
     toggleCircle.Visible = false
     table.insert(element.Drawings, toggleCircle)
 
-    -- Текст
     local labelText = Drawing.new("Text")
     labelText.Text = text
     labelText.Position = Vector2.new(xPos, yPos + 5)
     labelText.Size = 15
     labelText.Color = Colors.Text
-    labelText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
+    labelText.Font = FONT_NORMAL
     labelText.Visible = false
     table.insert(element.Drawings, labelText)
 
@@ -461,7 +453,6 @@ function Tab:AddToggle(text, default, callback)
     return element
 end
 
--- Слайдер
 function Tab:AddSlider(text, min, max, default, callback)
     local element = UIElement.new("Slider")
     element.Min = min
@@ -473,17 +464,15 @@ function Tab:AddSlider(text, min, max, default, callback)
     local yPos = self.Window.Position.Y + 65 + yOffset
     local sliderWidth = self.Window.Width - 100
 
-    -- Текст
     local labelText = Drawing.new("Text")
     labelText.Text = text .. ": " .. round(element.Value, 1)
     labelText.Position = Vector2.new(xPos, yPos)
     labelText.Size = 15
     labelText.Color = Colors.Text
-    labelText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
+    labelText.Font = FONT_NORMAL
     labelText.Visible = false
     table.insert(element.Drawings, labelText)
 
-    -- Фон слайдера
     local sliderBg = Drawing.new("Square")
     sliderBg.Size = Vector2.new(sliderWidth, 6)
     sliderBg.Position = Vector2.new(xPos + 5, yPos + 20)
@@ -492,7 +481,6 @@ function Tab:AddSlider(text, min, max, default, callback)
     sliderBg.Visible = false
     table.insert(element.Drawings, sliderBg)
 
-    -- Заполненная часть
     local sliderFill = Drawing.new("Square")
     local fillWidth = ((element.Value - min) / (max - min)) * sliderWidth
     sliderFill.Size = Vector2.new(fillWidth, 6)
@@ -502,7 +490,6 @@ function Tab:AddSlider(text, min, max, default, callback)
     sliderFill.Visible = false
     table.insert(element.Drawings, sliderFill)
 
-    -- Кружок слайдера
     local sliderKnob = Drawing.new("Square")
     sliderKnob.Size = Vector2.new(10, 10)
     sliderKnob.Position = Vector2.new(sliderBg.Position.X + fillWidth - 5, sliderBg.Position.Y - 2)
@@ -519,7 +506,6 @@ function Tab:AddSlider(text, min, max, default, callback)
         local percent = relX / sliderWidth
         element.Value = min + (max - min) * percent
         element.Value = round(element.Value, 1)
-        -- обновление визуала
         sliderFill.Size = Vector2.new(relX, 6)
         sliderKnob.Position = Vector2.new(sliderBg.Position.X + relX - 5, sliderBg.Position.Y - 2)
         labelText.Text = text .. ": " .. round(element.Value, 1)
@@ -559,7 +545,6 @@ function Tab:AddSlider(text, min, max, default, callback)
     return element
 end
 
--- Текстовое поле
 function Tab:AddTextbox(text, placeholder, callback)
     local element = UIElement.new("Textbox")
     element.Value = ""
@@ -570,17 +555,15 @@ function Tab:AddTextbox(text, placeholder, callback)
     local yPos = self.Window.Position.Y + 65 + yOffset
     local textboxWidth = self.Window.Width - 120
 
-    -- Label
     local labelText = Drawing.new("Text")
     labelText.Text = text
     labelText.Position = Vector2.new(xPos, yPos + 5)
     labelText.Size = 15
     labelText.Color = Colors.Text
-    labelText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
+    labelText.Font = FONT_NORMAL
     labelText.Visible = false
     table.insert(element.Drawings, labelText)
 
-    -- Поле ввода
     local inputBg = Drawing.new("Square")
     inputBg.Size = Vector2.new(textboxWidth, 25)
     inputBg.Position = Vector2.new(xPos + 70, yPos)
@@ -594,7 +577,7 @@ function Tab:AddTextbox(text, placeholder, callback)
     inputText.Position = inputBg.Position + Vector2.new(3, 3)
     inputText.Size = 15
     inputText.Color = Colors.TextDark
-    inputText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
+    inputText.Font = FONT_NORMAL
     inputText.Visible = false
     table.insert(element.Drawings, inputText)
 
@@ -653,7 +636,6 @@ function Tab:AddTextbox(text, placeholder, callback)
     return element
 end
 
--- Лейбл
 function Tab:AddLabel(text)
     local element = UIElement.new("Label")
     local yOffset = (#self.Elements * 35) + 10
@@ -665,7 +647,7 @@ function Tab:AddLabel(text)
     label.Position = Vector2.new(xPos, yPos)
     label.Size = 15
     label.Color = Colors.Text
-    label.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
+    label.Font = FONT_NORMAL
     label.Visible = false
     table.insert(element.Drawings, label)
 
@@ -673,7 +655,6 @@ function Tab:AddLabel(text)
     return element
 end
 
--- Разделитель
 function Tab:AddSeparator()
     local element = UIElement.new("Separator")
     local yOffset = (#self.Elements * 35) + 10
@@ -692,10 +673,9 @@ function Tab:AddSeparator()
     return element
 end
 
--- Публичные методы для совместимости
+-- Публичный метод
 function KDM:CreateWindow(options)
     return Window.new(options)
 end
 
--- Возвращаем библиотеку
 return KDM
