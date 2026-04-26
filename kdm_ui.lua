@@ -1,6 +1,6 @@
 -- KDM UI Library
 -- Основной файл: kdm_ui.lua
--- Создаёт внешний интерфейс для читов в Roblox
+-- Исправленная версия (шрифты числами)
 
 local KDM = {}
 KDM.__index = KDM
@@ -17,6 +17,10 @@ if not Drawing then
     warn("Drawing library is not available")
     return
 end
+
+-- Шрифты в числовом представлении
+local FONT_NORMAL = 0
+local FONT_BOLD = 2
 
 -- Внутренние переменные
 local ActiveWindows = {}
@@ -168,7 +172,7 @@ function Window.new(options)
     titleText.Position = self.Position + Vector2.new(8, 5)
     titleText.Size = 18
     titleText.Color = Colors.Text
-    titleText.Font = Drawing.Fonts.SourceSansBold
+    titleText.Font = FONT_BOLD  -- ИСПРАВЛЕНО
     titleText.Visible = true
     table.insert(self.MainContainer, titleText)
 
@@ -246,7 +250,7 @@ function Window.new(options)
     closeText.Position = closeBtn.Position + Vector2.new(4, 0)
     closeText.Size = 16
     closeText.Color = Colors.Text
-    closeText.Font = Drawing.Fonts.SourceSansBold
+    closeText.Font = FONT_BOLD  -- ИСПРАВЛЕНО
     closeText.Visible = true
     table.insert(self.MainContainer, closeText)
 
@@ -284,7 +288,7 @@ function Window:AddTab(name, icon)
     tabText.Position = tabBtn.Position + Vector2.new(5, 3)
     tabText.Size = 15
     tabText.Color = Colors.Text
-    tabText.Font = Drawing.Fonts.SourceSans
+    tabText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
     tabText.Visible = true
     table.insert(self.MainContainer, tabText)
 
@@ -360,7 +364,7 @@ function Tab:AddButton(text, callback)
     btnText.Position = btn.Position + Vector2.new(5, 5)
     btnText.Size = 16
     btnText.Color = Colors.Text
-    btnText.Font = Drawing.Fonts.SourceSans
+    btnText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
     btnText.Visible = false
     table.insert(element.Drawings, btnText)
 
@@ -429,7 +433,7 @@ function Tab:AddToggle(text, default, callback)
     labelText.Position = Vector2.new(xPos, yPos + 5)
     labelText.Size = 15
     labelText.Color = Colors.Text
-    labelText.Font = Drawing.Fonts.SourceSans
+    labelText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
     labelText.Visible = false
     table.insert(element.Drawings, labelText)
 
@@ -475,7 +479,7 @@ function Tab:AddSlider(text, min, max, default, callback)
     labelText.Position = Vector2.new(xPos, yPos)
     labelText.Size = 15
     labelText.Color = Colors.Text
-    labelText.Font = Drawing.Fonts.SourceSans
+    labelText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
     labelText.Visible = false
     table.insert(element.Drawings, labelText)
 
@@ -572,7 +576,7 @@ function Tab:AddTextbox(text, placeholder, callback)
     labelText.Position = Vector2.new(xPos, yPos + 5)
     labelText.Size = 15
     labelText.Color = Colors.Text
-    labelText.Font = Drawing.Fonts.SourceSans
+    labelText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
     labelText.Visible = false
     table.insert(element.Drawings, labelText)
 
@@ -590,7 +594,7 @@ function Tab:AddTextbox(text, placeholder, callback)
     inputText.Position = inputBg.Position + Vector2.new(3, 3)
     inputText.Size = 15
     inputText.Color = Colors.TextDark
-    inputText.Font = Drawing.Fonts.SourceSans
+    inputText.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
     inputText.Visible = false
     table.insert(element.Drawings, inputText)
 
@@ -661,7 +665,7 @@ function Tab:AddLabel(text)
     label.Position = Vector2.new(xPos, yPos)
     label.Size = 15
     label.Color = Colors.Text
-    label.Font = Drawing.Fonts.SourceSans
+    label.Font = FONT_NORMAL  -- ИСПРАВЛЕНО
     label.Visible = false
     table.insert(element.Drawings, label)
 
